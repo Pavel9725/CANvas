@@ -420,8 +420,8 @@ int main(void)
 	CAN_Filter_Config();
 
 
-	LCD_Command(0x01); // clear display
-	HAL_Delay(10);
+	LCD_Command(0x01);  // clear display
+	HAL_Delay(10);		// wait
 
 	LCD_SetCursor(0,2);
 	LCD_String("Starting...");
