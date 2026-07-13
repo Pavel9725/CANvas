@@ -12,14 +12,6 @@
 #endif
 
 
-/* ========================================================================== */
-/*                           PIN ENCODER                                      */
-/* ========================================================================== */
-#define ENC_PORT GPIOB
-#define ENC_A_PIN GPIO_PIN_0
-#define ENC_B_PIN GPIO_PIN_1
-#define ENC_BTN_PIN GPIO_PIN_2
-
 
 /* ========================================================================== */
 /*                     CONST AND SETTINGS SYSTEM                              */
@@ -409,9 +401,11 @@ static void CAN_Filter_Config(void)
 
 	// ---- ID1: 0x7E8 (temp engine)
 	sFilterConfig.FilterIdHigh = (0x7E8 << 5) & 0xFFFF;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
 
 	// ---- ID2: 0x3CB (temp battery)
 	sFilterConfig.FilterIdLow = (0x3CB << 5) & 0xFFFF;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
 
 	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
 

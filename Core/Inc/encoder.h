@@ -8,6 +8,16 @@
 #ifndef INC_ENCODER_H_
 #define INC_ENCODER_H_
 
+
+/* ========================================================================== */
+/*                           PIN ENCODER                                      */
+/* ========================================================================== */
+#define ENC_PORT GPIOB
+#define ENC_A_PIN GPIO_PIN_0
+#define ENC_B_PIN GPIO_PIN_1
+#define ENC_BTN_PIN GPIO_PIN_2
+
+
 typedef enum
 {
 	ENC_HOME,
