@@ -12,7 +12,13 @@
 #endif
 
 
-
+/* ========================================================================== */
+/*                           PIN ENCODER                                      */
+/* ========================================================================== */
+#define ENC_PORT GPIOB
+#define ENC_A_PIN GPIO_PIN_0
+#define ENC_B_PIN GPIO_PIN_1
+#define ENC_BTN_PIN GPIO_PIN_2
 
 
 /* ========================================================================== */
@@ -25,27 +31,11 @@
 #define FAN_6 0x06					//speed 6 fan
 
 
-/* ===================== BATTERY TEMPERATURE THRESHOLDS FOR THE FAN ========================= */
-#define TEMP_BAT_OFF 34
-#define TEMP_BAT_SPEED5 35
-#define TEMP_BAT_SPEED6 36
-
-
-/* ===================== DELTAS FOR BALANCING ========================= */
-#define UPPER_DIFF 8
-#define LOWER_DIFF 3
-
-
-/* ===================== CRITICAL THRESHOLDS ========================= */
-#define ENGINE_OVERHEAT_TEMP 105
-#define BATTERY_OVERHEAT_TEMP 45
-
 
 /* ===================== WARNING INDEXES IN THE ARRAY ========================= */
 #define WARNING_CAN      0
 #define WARNING_ENGINE   1
 #define WARNING_BATTERY  2
-
 
 
 
@@ -147,6 +137,43 @@ char lcd_buffer[32]; // bufer
 /* ================= LED TIMER ================= */
 const uint32_t led_timer = 50;
 
+
+/* ========================================================================== */
+/*            			    	SETTINGS     		                  		  */
+/* ========================================================================== */
+typedef struct
+{
+/* ===================== CRITICAL THRESHOLDS ========================= */
+	uint8_t engine_overheat_temp_up;
+	uint8_t engine_overheat_temp_low;
+	uint8_t battery_overheat_temp_up;
+	uint8_t battery_overheat_temp_low;
+
+
+/* ===================== BATTERY TEMPERATURE THRESHOLDS FOR THE FAN ========================= */
+	uint8_t temp_bat_off;
+	uint8_t temp_bat_speed5;
+	uint8_t temp_bat_speed6;
+
+
+/* ===================== DELTAS FOR BALANCING ========================= */
+	uint8_t upped_diff;
+	uint8_t lower_diff;
+
+} Settings_t;
+
+Settings_t settings =
+{
+		.engine_overheat_temp_up = 105,
+		.engine_overheat_temp_low = 100,
+		.battery_overheat_temp_up = 45,
+		.battery_overheat_temp_low = 40,
+		.temp_bat_off = 34,
+		.temp_bat_speed5 = 35,
+		.temp_bat_speed6 = 36,
+		.upped_diff = 8,
+		.lower_diff = 3
+};
 
 
 
@@ -535,9 +562,9 @@ void update_balance_mode(void)
 {
 	uint8_t temp_diff = temp_bat_max - temp_bat_min;
 
-	if(temp_diff >= UPPER_DIFF)
+	if(temp_diff >= settings.upped_diff)
 		balance_mode = 1;
-	else if(balance_mode && (temp_diff <= LOWER_DIFF))
+	else if(balance_mode && (temp_diff <= settings.lower_diff))
 		balance_mode = 0;
 }
 
@@ -546,13 +573,13 @@ uint8_t get_target_fan_speed(void)
 	if(balance_mode)
 		return FAN_6;
 
-	if(temp_bat_max <= TEMP_BAT_OFF)
+	if(temp_bat_max <= settings.temp_bat_off)
 		return FAN_OFF;
 
-	if(temp_bat_max >= TEMP_BAT_SPEED6)
+	if(temp_bat_max >= settings.temp_bat_speed6)
 		return FAN_6;
 
-	if(temp_bat_max >= TEMP_BAT_SPEED5)
+	if(temp_bat_max >= settings.temp_bat_speed5)
 		return FAN_5;
 	return fan_speed;
 }
@@ -643,14 +670,29 @@ void update_led(void)
 
 void Check_Warnings(void)
 {
-    warnings[WARNING_CAN].active =
-            can_bus_error;
+    warnings[WARNING_CAN].active = can_bus_error;
 
-    warnings[WARNING_ENGINE].active =
-            (temp_engine >= ENGINE_OVERHEAT_TEMP);
+    if(!warnings[WARNING_ENGINE].active)
+	{
+    	if(temp_engine >= settings.engine_overheat_temp_up)
+    		warnings[WARNING_ENGINE].active = 1;
+	}
+    else
+    {
+    	if(temp_engine <= settings.engine_overheat_temp_low)
+    	    		warnings[WARNING_ENGINE].active = 0;
+    }
 
-    warnings[WARNING_BATTERY].active =
-            (temp_bat_max >= BATTERY_OVERHEAT_TEMP);
+    if(!warnings[WARNING_BATTERY].active)
+    	{
+    	if(temp_bat_max >= settings.battery_overheat_temp_up)
+    	            warnings[WARNING_BATTERY].active = 1;
+    	}
+		else
+		{
+			if(temp_bat_max <= settings.battery_overheat_temp_low)
+				warnings[WARNING_BATTERY].active = 0;
+		}
 
     warning_count = 0;
 
