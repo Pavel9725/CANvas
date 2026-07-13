@@ -401,20 +401,18 @@ static void CAN_Filter_Config(void)
 	CAN_FilterTypeDef sFilterConfig;
 
 	sFilterConfig.FilterBank = 0;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = (0x7E8 << 5);
-	sFilterConfig.FilterIdLow = 0;
-	sFilterConfig.FilterMaskIdHigh = (0x7FF << 5);
-	sFilterConfig.FilterMaskIdLow = 0;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;
 	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
 	sFilterConfig.FilterActivation = ENABLE;
-	sFilterConfig.SlaveStartFilterBank = 14;  // Для F1 это поле игнорируется
-	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
+	sFilterConfig.SlaveStartFilterBank = 14;
 
-	// Фильтр для ID 0x3CB
-	sFilterConfig.FilterBank = 1;
-	sFilterConfig.FilterIdHigh = (0x3CB << 5);
+	// ---- ID1: 0x7E8 (temp engine)
+	sFilterConfig.FilterIdHigh = (0x7E8 << 5) & 0xFFFF;
+
+	// ---- ID2: 0x3CB (temp battery)
+	sFilterConfig.FilterIdLow = (0x3CB << 5) & 0xFFFF;
+
 	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
 
 }
