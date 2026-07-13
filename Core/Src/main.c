@@ -297,6 +297,7 @@ void CAN_SendRequest(uint16_t id, uint8_t len, uint8_t *data)
 	if (HAL_CAN_AddTxMessage(&hcan, &txHeader, data, &mailbox) != HAL_OK)
 	    {
 			DEBUG_PRINT("TX ERROR\r\n");
+			can_bus_error = 1;
 	    }
 }
 
@@ -397,41 +398,25 @@ static void MX_CAN_Init(void)
 /* ================= FILTER (ACCEPT ALL) ================= */
 static void CAN_Filter_Config(void)
 {
-    CAN_FilterTypeDef filter0;
-    CAN_FilterTypeDef filter1;
+	CAN_FilterTypeDef sFilterConfig;
 
-    /* ===== GLOBAL BANK SPLIT ===== */
-    filter0.SlaveStartFilterBank = 14;
+	sFilterConfig.FilterBank = 0;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = (0x7E8 << 5);
+	sFilterConfig.FilterIdLow = 0;
+	sFilterConfig.FilterMaskIdHigh = (0x7FF << 5);
+	sFilterConfig.FilterMaskIdLow = 0;
+	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+	sFilterConfig.FilterActivation = ENABLE;
+	sFilterConfig.SlaveStartFilterBank = 14;  // Для F1 это поле игнорируется
+	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
 
-    /* ================= FILTER 0 ================= */
-    filter0.FilterBank = 0;
-    filter0.FilterMode = CAN_FILTERMODE_IDMASK;
-    filter0.FilterScale = CAN_FILTERSCALE_32BIT;
+	// Фильтр для ID 0x3CB
+	sFilterConfig.FilterBank = 1;
+	sFilterConfig.FilterIdHigh = (0x3CB << 5);
+	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
 
-    filter0.FilterIdHigh = (0x7E8 << 5);
-    filter0.FilterMaskIdHigh = (0x7FF << 5);
-    filter0.FilterIdLow = 0;
-    filter0.FilterMaskIdLow = 0;
-
-    filter0.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-    filter0.FilterActivation = ENABLE;
-
-    HAL_CAN_ConfigFilter(&hcan, &filter0);
-
-    /* ================= FILTER 1 ================= */
-    filter1.FilterBank = 1;
-    filter1.FilterMode = CAN_FILTERMODE_IDMASK;
-    filter1.FilterScale = CAN_FILTERSCALE_32BIT;
-
-    filter1.FilterIdHigh = (0x3CB << 5);
-    filter1.FilterMaskIdHigh = (0x7FF << 5);
-    filter1.FilterIdLow = 0;
-    filter1.FilterMaskIdLow = 0;
-
-    filter1.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-    filter1.FilterActivation = ENABLE;
-
-    HAL_CAN_ConfigFilter(&hcan, &filter1);
 }
 
 /* ================= MAIN ================= */
@@ -542,7 +527,7 @@ void LCD_Update(void)
     LCD_String(lcd_buffer);
 
 
-    sprintf(lcd_buffer, "Fan:%d Bmax:%2d", fan_speed, temp_bat_max);
+    sprintf(lcd_buffer, "Fan:%d   Bmax:%2d", fan_speed, temp_bat_max);
 
     LCD_SetCursor(1,0);
     LCD_String(lcd_buffer);
@@ -560,12 +545,12 @@ void CAN_Check_Status(void)
 
 void update_balance_mode(void)
 {
-	uint8_t temp_diff = temp_bat_max - temp_bat_min;
+	uint8_t temp_diff = (temp_bat_max >= temp_bat_min) ? (temp_bat_max - temp_bat_min) : (temp_bat_min - temp_bat_max);
 
 	if(temp_diff >= settings.upped_diff)
-		balance_mode = 1;
-	else if(balance_mode && (temp_diff <= settings.lower_diff))
-		balance_mode = 0;
+	        balance_mode = 1;
+	    else if (balance_mode && (temp_diff <= settings.lower_diff))
+	        balance_mode = 0;
 }
 
 uint8_t get_target_fan_speed(void)
