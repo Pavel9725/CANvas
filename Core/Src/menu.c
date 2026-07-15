@@ -13,6 +13,8 @@
 
 
 #define MENU_ITEMS_COUNT 9
+#define MENU_SAVE_INDEX  9
+#define MENU_TOTAL_ITEMS 10
 
 typedef enum
 {
@@ -30,6 +32,12 @@ static Settings_t menu_settings;
 static uint8_t menu_index = 0;
 
 static uint8_t save_select = 0;
+
+static uint8_t menu_active = 0;
+static uint8_t edit_mode = 0;
+
+
+static uint8_t last_draw_index = 255;
 
 typedef struct
 {
@@ -158,7 +166,7 @@ static void Menu_ShowSave(void)
 
 
     LCD_SetCursor(0,0);
-    LCD_String("SAVE SETTINGS");
+    LCD_String("SAVE SETTINGS?");
 
 
     LCD_SetCursor(1,0);
@@ -169,5 +177,217 @@ static void Menu_ShowSave(void)
     else
         LCD_String("YES <NO>");
 
+}
+
+static void Menu_Enter(void)
+{
+    menu_settings = settings;
+
+    menu_index = 0;
+
+    edit_mode = 0;
+
+    menu_active = 1;
+
+    LCD_Command(0x01);
+    HAL_Delay(5);
+
+    Menu_ShowItem();
+}
+
+static void Menu_Exit(void)
+{
+    menu_active = 0;
+    edit_mode = 0;
+
+    LCD_Command(0x01);
+    HAL_Delay(5);
+}
+
+static void Menu_Save(void)
+{
+    settings = menu_settings;
+
+    Settings_Save();
+
+    LCD_Command(0x01);
+    HAL_Delay(5);
+
+    LCD_String("SAVED");
+
+    HAL_Delay(1000);
+
+    Menu_Exit();
+}
+
+void Menu_Process(void)
+{
+    int8_t dir;
+
+
+    /*
+       Если меню закрыто
+    */
+
+    if(!menu_active)
+    {
+        if(Encoder_Button_Held(5000))
+        {
+            Menu_Enter();
+        }
+
+        return;
+    }
+
+
+
+    /*
+       Если меню открыто
+    */
+
+    dir = Encoder_Read();
+
+    if(menu_index == MENU_SAVE_INDEX)
+    {
+        if(dir > 0 || dir < 0)
+        {
+            save_select ^= 1;
+
+            Menu_ShowSave();
+        }
+
+
+        if(Encoder_Button_Pressed())
+        {
+            if(save_select == 0)
+            {
+                Menu_Save();
+            }
+            else
+            {
+                Menu_Exit();
+            }
+        }
+
+
+        return;
+    }
+
+
+
+    /*
+       РЕДАКТИРОВАНИЕ ЗНАЧЕНИЯ
+    */
+
+    if(edit_mode)
+    {
+
+        if(dir > 0)
+        {
+            if(*menu_items[menu_index].value <
+               menu_items[menu_index].max)
+            {
+                (*menu_items[menu_index].value)++;
+            }
+
+            Menu_ShowItem();
+        }
+
+
+        if(dir < 0)
+        {
+            if(*menu_items[menu_index].value >
+               menu_items[menu_index].min)
+            {
+                (*menu_items[menu_index].value)--;
+            }
+
+            Menu_ShowItem();
+        }
+
+
+
+        if(Encoder_Button_Pressed())
+        {
+            edit_mode = 0;
+
+            Menu_ShowItem();
+        }
+
+
+        return;
+    }
+
+
+
+    /*
+       ПРОСМОТР ПАРАМЕТРОВ
+    */
+
+
+    if(dir > 0)
+    {
+        menu_index++;
+
+        if(menu_index >= MENU_TOTAL_ITEMS)
+        {
+            menu_index = 0;
+        }
+
+        Menu_Show();
+    }
+
+
+    if(dir < 0)
+    {
+        if(menu_index == 0)
+            menu_index = MENU_TOTAL_ITEMS - 1;
+        else
+            menu_index--;
+
+        Menu_Show();
+    }
+
+
+
+    /*
+       Вход в редактирование
+    */
+
+    if(Encoder_Button_Pressed())
+    {
+
+        if(menu_index == MENU_SAVE_INDEX)
+        {
+            if(save_select == 0)
+            {
+                Menu_Save();
+            }
+            else
+            {
+                Menu_Exit();
+            }
+
+            return;
+        }
+
+
+        edit_mode = 1;
+
+        Menu_ShowItem();
+    }
+
+}
+
+static void Menu_Show(void)
+{
+    if(menu_index == MENU_SAVE_INDEX)
+    {
+        Menu_ShowSave();
+    }
+    else
+    {
+        Menu_ShowItem();
+    }
 }
 

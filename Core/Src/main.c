@@ -470,7 +470,10 @@ int main(void)
 		CAN_Check_Status();
 		Check_Warnings();
 
-		LCD_Update();
+
+		Menu_Process();
+		if(Menu_IsActive())
+		    LCD_Update();
 
 
 		int8_t dir = Encoder_Read();

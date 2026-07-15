@@ -6,6 +6,7 @@
 void Menu_Init(void);
 void Menu_Process(void);
 uint8_t Menu_IsActive(void);
+static void Menu_Show(void);
 
 
 
