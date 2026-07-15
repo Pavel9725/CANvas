@@ -3,6 +3,7 @@
 #include "stm32f1xx_hal_can.h"
 #include <stdio.h>
 #include "encoder.h"
+#include "settings.h"
 
 #define DEBUG_MODE 0 //////////////// 1 - on debug, 0 - off debug
 
@@ -133,46 +134,6 @@ const uint32_t led_timer = 50;
 
 
 /* ========================================================================== */
-/*            			    	SETTINGS     		                  		  */
-/* ========================================================================== */
-typedef struct
-{
-/* ===================== CRITICAL THRESHOLDS ========================= */
-	uint8_t engine_overheat_temp_up;
-	uint8_t engine_overheat_temp_low;
-	uint8_t battery_overheat_temp_up;
-	uint8_t battery_overheat_temp_low;
-
-
-/* ===================== BATTERY TEMPERATURE THRESHOLDS FOR THE FAN ========================= */
-	uint8_t temp_bat_off;
-	uint8_t temp_bat_speed5;
-	uint8_t temp_bat_speed6;
-
-
-/* ===================== DELTAS FOR BALANCING ========================= */
-	uint8_t upped_diff;
-	uint8_t lower_diff;
-
-} Settings_t;
-
-Settings_t settings =
-{
-		.engine_overheat_temp_up = 105,
-		.engine_overheat_temp_low = 100,
-		.battery_overheat_temp_up = 45,
-		.battery_overheat_temp_low = 40,
-		.temp_bat_off = 34,
-		.temp_bat_speed5 = 35,
-		.temp_bat_speed6 = 36,
-		.upped_diff = 8,
-		.lower_diff = 3
-};
-
-
-
-
-/* ========================================================================== */
 /*            			    FUNCTION PROTOTYPES     		                  */
 /* ========================================================================== */
 
@@ -244,15 +205,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     }
 
 	#if DEBUG_MODE
-    DEBUG_PRINT("ID:%03lX DLC:%lu DATA:", rxHeader.StdId, rxHeader.DLC);
+  //  DEBUG_PRINT("ID:%03lX DLC:%lu DATA:", rxHeader.StdId, rxHeader.DLC);
 
-            for (int i = 0; i < rxHeader.DLC; i++)
-            {
-            	DEBUG_PRINT(" %02X", rxData[i]);
-            }
+           // for (int i = 0; i < rxHeader.DLC; i++)
+           // {
+           // 	DEBUG_PRINT(" %02X", rxData[i]);
+           // }
 
-            DEBUG_PRINT("\r\n");
-            DEBUG_PRINT("\r\n");
+           // DEBUG_PRINT("\r\n");
+          //  DEBUG_PRINT("\r\n");
 	#endif
 
 
@@ -262,9 +223,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     	temp_bat_max = rxData[4];
     	temp_bat_min = rxData[5];
 
-    	DEBUG_PRINT("TEMP BAT_MAX: = %d C\r\n", temp_bat_max);
-    	DEBUG_PRINT("TEMP BAT_MIN: = %d C\r\n", temp_bat_min);
-    	DEBUG_PRINT("\r\n");
+    	//DEBUG_PRINT("TEMP BAT_MAX: = %d C\r\n", temp_bat_max);
+    	//DEBUG_PRINT("TEMP BAT_MIN: = %d C\r\n", temp_bat_min);
+    	//DEBUG_PRINT("\r\n");
     }
 
     if (rxHeader.StdId == 0x7E8 && rxHeader.DLC > 4 && rxData[0] == 0x03 && rxData[1] == 0x41 && rxData[2] == 0x05)
@@ -425,12 +386,18 @@ int main(void)
 	HAL_Init();
     SystemClock_Config();
 
+    Settings_Load();
+
     MX_GPIO_Init();
     MX_CAN_Init();
     LCD_Init();
     MX_TIM3_Init();
 
     Encoder_Init();
+
+
+
+    Settings_Reset();
 
 
 	CAN_Filter_Config();
