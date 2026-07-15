@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 
-#define MENU_ITEMS_COUNT 9
+#define MENU_ITEMS_COUNT 10
 #define MENU_SAVE_INDEX  9
 #define MENU_TOTAL_ITEMS 10
 
@@ -122,7 +122,8 @@ void Menu_Init(void)
 
 uint8_t Menu_IsActive(void)
 {
-    return menu_mode != MENU_VIEW;
+    //return menu_mode != MENU_VIEW;
+	return menu_active;
 }
 
 static void Menu_ShowItem(void)
@@ -376,6 +377,7 @@ void Menu_Process(void)
 
         Menu_ShowItem();
     }
+
 
 }
 

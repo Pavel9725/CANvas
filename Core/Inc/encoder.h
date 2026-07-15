@@ -26,6 +26,6 @@ int16_t Encoder_GetValue(void);
 
 uint8_t Encoder_Button_Pressed(void);
 
-uint8_t Encoder_Button_Hold(uint32_t hold_time_ms);
+uint8_t Encoder_Button_Held(uint32_t hold_time_ms);
 
 #endif

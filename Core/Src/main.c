@@ -391,13 +391,10 @@ int main(void)
     MX_GPIO_Init();
     MX_CAN_Init();
     LCD_Init();
-    MX_TIM3_Init();
+    //MX_TIM3_Init();
 
-    Encoder_Init();
-
-
-
-    Settings_Reset();
+   // Encoder_Init();
+    //Menu_Init();
 
 
 	CAN_Filter_Config();
@@ -471,23 +468,8 @@ int main(void)
 		Check_Warnings();
 
 
-		Menu_Process();
-		if(Menu_IsActive())
 		    LCD_Update();
-
-
-		int8_t dir = Encoder_Read();
-
-		    if(dir != 0) {
-		        int16_t val = Encoder_GetValue();
-		        printf("Encoder: dir=%d, val=%d\r\n", dir, val);
-		    }
-
-		    if(Encoder_Button_Pressed()) {
-		        printf("Button pressed!\r\n");
-		    }
-
-		    HAL_Delay(50);
+		HAL_Delay(50);
 
     }
 }
