@@ -1,39 +1,31 @@
-/*
- * encoder.h
- *
- *  Created on: Jul 13, 2026
- *      Author: Pavel
- */
+#ifndef ENCODER_H
+#define ENCODER_H
 
-#ifndef INC_ENCODER_H_
-#define INC_ENCODER_H_
+#include "stm32f1xx_hal.h"
 
 
-/* ========================================================================== */
-/*                           PIN ENCODER                                      */
-/* ========================================================================== */
-#define ENC_PORT GPIOB
-#define ENC_A_PIN GPIO_PIN_0
-#define ENC_B_PIN GPIO_PIN_1
-#define ENC_BTN_PIN GPIO_PIN_2
+#define ENC_A_Pin			GPIO_PIN_4
+#define ENC_A_GPIO_Port 	GPIOB
+#define ENC_B_Pin 			GPIO_PIN_5
+#define ENC_B_GPIO_Port 	GPIOB
+#define ENC_BTN_Pin 		GPIO_PIN_6
+#define ENC_BTN_GPIO_Port 	GPIOB
 
-
-typedef enum
-{
-	ENC_HOME,
-
-	ENC_LEFT,
-	ENC_RIGHT,
-
-	ENC_CLICK,
-	ENC_LONG_CLICK
-
-}Encoder_Event_t;
 
 
 void Encoder_Init(void);
-void Encoder_Update(void);
-Encoder_Event_t Encoder_GetEvent(void);
+
+int8_t Encoder_Read(void);
 
 
-#endif /* INC_ENCODER_H_ */
+void Encoder_Reset(void);
+
+
+int16_t Encoder_GetValue(void);
+
+
+uint8_t Encoder_Button_Pressed(void);
+
+uint8_t Encoder_Button_Hold(uint32_t hold_time_ms);
+
+#endif
