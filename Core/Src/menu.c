@@ -145,8 +145,7 @@ static void Menu_ShowItem(void)
 
     if(menu_mode == MENU_EDIT)
     {
-        sprintf(buf,
-                "<%3d>",
+        sprintf(buf, "<%3d>",
                 *menu_items[menu_index].value);
     }
     else
@@ -190,6 +189,8 @@ static void Menu_Enter(void)
 
     menu_active = 1;
 
+    Encoder_Reset();
+
     LCD_Command(0x01);
     HAL_Delay(5);
 
@@ -214,6 +215,7 @@ static void Menu_Save(void)
     LCD_Command(0x01);
     HAL_Delay(5);
 
+    LCD_SetCursor(0,5);
     LCD_String("SAVED");
 
     HAL_Delay(1000);
@@ -235,6 +237,8 @@ void Menu_Process(void)
         if(Encoder_Button_Held(5000))
         {
             Menu_Enter();
+            while(HAL_GPIO_ReadPin(ENC_BTN_GPIO_Port, ENC_BTN_Pin)==GPIO_PIN_RESET);
+            	HAL_Delay(20);
         }
 
         return;
@@ -250,7 +254,7 @@ void Menu_Process(void)
 
     if(menu_index == MENU_SAVE_INDEX)
     {
-        if(dir > 0 || dir < 0)
+        if(dir != 0)
         {
             save_select ^= 1;
 
@@ -267,6 +271,8 @@ void Menu_Process(void)
             else
             {
                 Menu_Exit();
+                while(HAL_GPIO_ReadPin(ENC_BTN_GPIO_Port, ENC_BTN_Pin)==GPIO_PIN_RESET);
+                HAL_Delay(20);
             }
         }
 
@@ -381,7 +387,7 @@ void Menu_Process(void)
 
 }
 
-static void Menu_Show(void)
+void Menu_Show(void)
 {
     if(menu_index == MENU_SAVE_INDEX)
     {

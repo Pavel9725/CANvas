@@ -28,4 +28,6 @@ uint8_t Encoder_Button_Pressed(void);
 
 uint8_t Encoder_Button_Held(uint32_t hold_time_ms);
 
+void Encoder_Update(void);
+
 #endif

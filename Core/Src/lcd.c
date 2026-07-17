@@ -1,4 +1,9 @@
 #include "lcd.h"
+#include "can.h"
+#include "fan.h"
+#include "warnings.h"
+#include "main.h"
+#include <stdio.h>
 
 #define LCD_PORT GPIOA
 
@@ -9,6 +14,15 @@
 #define LCD_D5_PIN GPIO_PIN_3
 #define LCD_D6_PIN GPIO_PIN_4
 #define LCD_D7_PIN GPIO_PIN_5
+
+
+extern uint8_t warning_count;
+
+
+uint32_t last_lcd_update = 0;
+const uint32_t lcd_update_period = 500;
+static char lcd_buffer[32]; // bufer
+
 
 void DWT_Delay_Init(void)
 {
@@ -124,4 +138,34 @@ void LCD_String(char *str)
     {
         LCD_Data((uint8_t)*str++);
     }
+}
+
+void LCD_Update(void)
+{
+    uint32_t current_time = HAL_GetTick();
+
+    if(current_time - last_lcd_update < lcd_update_period)
+        return;
+
+    last_lcd_update = current_time;
+
+
+    if(warning_count > 0)
+    {
+    	Warnings_ShowLCD();
+        return;
+    }
+
+
+    sprintf(lcd_buffer, "t:%3d%cC Bmin:%d", temp_engine, 0xDF, temp_bat_min);
+
+    LCD_SetCursor(0,0);
+    LCD_String(lcd_buffer);
+
+    if(balance_mode == 1)
+    	sprintf(lcd_buffer, "Fan_B:%d Bmax:%2d", fan_speed, temp_bat_max);
+    else
+    	sprintf(lcd_buffer, "Fan:%d   Bmax:%2d", fan_speed, temp_bat_max);
+    LCD_SetCursor(1,0);
+    LCD_String(lcd_buffer);
 }
