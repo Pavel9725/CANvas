@@ -83,22 +83,25 @@ int main(void)
 
     while (1)
     {
-		CAN_RequestEngineTemp();
-		Fan_UpdateBalanceMode();
-		Fan_Control();
-		Update_Led();
-		CAN_CheckStatus();
-		Warnings_Check();
+		//CAN_RequestEngineTemp();
+		//Fan_UpdateBalanceMode();
+		//Fan_Control();
+		//Update_Led();
+		//CAN_CheckStatus();
+	//	Warnings_Check();
 
-		Encoder_Update();
-		Menu_Process();
+		//Encoder_Update();
+	//	Menu_Process();
 
-		if(!Menu_IsActive())
-		{
-		    LCD_Update();
-		}
+		//if(!Menu_IsActive())
+		//{
+		//    LCD_Update();
+		//}
 
-		HAL_Delay(50);
+    	Encoder_Button_Update();
+
+    	ButtonEvent_t event = Encoder_GetEvent();
+
 
     }
 }

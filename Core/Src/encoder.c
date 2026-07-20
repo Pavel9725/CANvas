@@ -1,17 +1,18 @@
 #include "encoder.h"
 
-/////////////////////////////////////////////////////////////////ИСПРАВИТЬ ОБРАБОТКУ НАЖАТИЙ ЭНКОДЕРА!
+
+#define BUTTON_DEBOUNCE_TIME    50
+#define BUTTON_LONG_TIME      3000
+#define BUTTON_RESET_TIME    10000
+
+
+
 static TIM_HandleTypeDef *htim_encoder = NULL;
 static uint16_t last_encoder_value = 0;
 
 
-static uint8_t button_pressed_event = 0;
-static uint8_t button_hold_event = 0;
 
-static uint8_t button_state = 0;
-static uint32_t button_time = 0;
-
-
+Encoder_t Encoder;
 
 void Encoder_Init(void)
 {
@@ -23,6 +24,17 @@ void Encoder_Init(void)
 
     __HAL_TIM_SET_COUNTER(htim_encoder, 0x8000);
     last_encoder_value = 0x8000;
+
+	Encoder.state = 0;
+	Encoder.last_state = 0;
+	Encoder.debounce_time = 0;
+	Encoder.press_time = 0;
+	Encoder.pressed = 0;
+	Encoder.event = BTN_NONE;
+	Encoder.long3_triggered = 0;
+	Encoder.long10_triggered = 0;
+
+
 }
 
 
@@ -58,94 +70,91 @@ int16_t Encoder_GetValue(void)
     return (int16_t)(now - 0x8000);
 }
 
-
-uint8_t Encoder_Button_Pressed(void)
+uint8_t Encoder_Button_Debounce(void)
 {
-    if(button_pressed_event)
-    {
-        button_pressed_event = 0;
-        return 1;
-    }
 
-    return 0;
+	uint32_t now = HAL_GetTick();
+
+	uint8_t state = (HAL_GPIO_ReadPin(ENC_BTN_GPIO_Port, ENC_BTN_Pin) == GPIO_PIN_RESET);
+
+	if(state != Encoder.last_state)
+	{
+
+		Encoder.debounce_time = now;
+		Encoder.last_state = state;
+	}
+
+	if((now - Encoder.debounce_time) < BUTTON_DEBOUNCE_TIME)
+		return Encoder.state;
+
+	Encoder.state = state;
+
+	return Encoder.state;
 }
 
-
-uint8_t Encoder_Button_Held(uint32_t hold_time_ms)
+void Encoder_Button_Update(void)
 {
-    (void)hold_time_ms;
+	uint8_t current_state = Encoder_Button_Debounce();
+	uint32_t now = HAL_GetTick();
 
-    if(button_hold_event)
-    {
-        button_hold_event = 0;
-        return 1;
-    }
+	if(current_state)
+	{
+		if(Encoder.press_time == 0)
+		{
+			Encoder.press_time = now;
+			Encoder.pressed = 1;
+			Encoder.event = BTN_NONE;
+			Encoder.long3_triggered = 0;
+			Encoder.long10_triggered = 0;
+		}
 
-    return 0;
+		uint32_t press = now - Encoder.press_time;
+
+		if(press >= BUTTON_RESET_TIME && (!Encoder.long10_triggered))
+		{
+			Encoder.event = BTN_RESET;
+			Encoder.long10_triggered = 1;
+			printf("RESET!\n");
+		}
+		else if(press >= BUTTON_LONG_TIME && (!Encoder.long3_triggered))
+		{
+			Encoder.long3_triggered = 1;
+
+		}
+	}
+	else
+	{
+		if(Encoder.pressed)
+		{
+			uint32_t press = now - Encoder.press_time;
+
+			if(Encoder.long10_triggered == 0)
+			{
+				if(Encoder.long3_triggered == 1)
+				{
+					Encoder.event = BTN_LONG;
+					printf("LONG 3!\n");
+				}
+				else if(press > BUTTON_DEBOUNCE_TIME)
+				{
+					Encoder.event = BTN_SHORT;
+					printf("SHORT!\n");
+				}
+			}
+
+			Encoder.pressed = 0;
+			Encoder.press_time = 0;
+			Encoder.long3_triggered = 0;
+		}
+	}
 }
 
-void Encoder_Update(void)
+ButtonEvent_t Encoder_GetEvent(void)
 {
-    uint8_t pin = HAL_GPIO_ReadPin(ENC_BTN_GPIO_Port, ENC_BTN_Pin);
+    ButtonEvent_t event = Encoder.event;
 
-    switch(button_state)
-    {
-        // Кнопка отпущена
-        case 0:
+    Encoder.event = BTN_NONE;
 
-            if(pin == GPIO_PIN_RESET)
-            {
-                button_state = 1;
-                button_time = HAL_GetTick();
-            }
-
-            break;
-
-        // Ожидание антидребезга
-        case 1:
-
-            if(HAL_GetTick() - button_time >= 20)
-            {
-                if(pin == GPIO_PIN_RESET)
-                {
-                    button_pressed_event = 1;
-                    button_state = 2;
-                    button_time = HAL_GetTick();
-                }
-                else
-                {
-                    button_state = 0;
-                }
-            }
-
-            break;
-
-        // Кнопка удерживается
-        case 2:
-
-            if(pin == GPIO_PIN_SET)
-            {
-                button_state = 0;
-            }
-            else
-            {
-                if(HAL_GetTick() - button_time >= 5000)
-                {
-                    button_hold_event = 1;
-                    button_state = 3;
-                }
-            }
-
-            break;
-
-        // Долгое удержание уже произошло
-        case 3:
-
-            if(pin == GPIO_PIN_SET)
-            {
-                button_state = 0;
-            }
-
-            break;
-    }
+    return event;
 }
+
