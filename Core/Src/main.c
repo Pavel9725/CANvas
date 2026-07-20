@@ -83,20 +83,19 @@ int main(void)
 
     while (1)
     {
-		//CAN_RequestEngineTemp();
-		//Fan_UpdateBalanceMode();
-		//Fan_Control();
-		//Update_Led();
-		//CAN_CheckStatus();
-	//	Warnings_Check();
+		CAN_RequestEngineTemp();
+		Fan_UpdateBalanceMode();
+		Fan_Control();
+		Update_Led();
+		CAN_CheckStatus();
+		Warnings_Check();
 
-		//Encoder_Update();
-	//	Menu_Process();
+		//Menu_Process();
 
-		//if(!Menu_IsActive())
-		//{
-		//    LCD_Update();
-		//}
+		if(!Menu_IsActive())
+		{
+		    LCD_Update();
+		}
 
     	Encoder_Button_Update();
 
