@@ -1,401 +1,314 @@
-/*
- * menu.c
- *
- *  Created on: Jul 15, 2026
- *      Author: Pavel
- */
-
 #include "menu.h"
-#include "settings.h"
 #include "encoder.h"
-#include "lcd.h"
-#include <stdio.h>
+#include "settings.h"
+#include <string.h>
+
+Menu_t Menu;
 
 
-#define MENU_ITEMS_COUNT 10
-#define MENU_SAVE_INDEX  9
-#define MENU_TOTAL_ITEMS 10
+static Settings_t settings_backup;
 
-typedef enum
+
+static MenuList_t MenuItems[MENU_ITEMS_COUNT] =
 {
-	MENU_VIEW,
-	MENU_EDIT,
-	MENU_SAVE
+    {
+        "Engine Hot",
+        &settings.engine_overheat_temp_up,
+        80,
+        120
+    },
 
-} MenuMode_t;
+    {
+        "Engine Cool",
+        &settings.engine_overheat_temp_low,
+        70,
+        110
+    },
 
+    {
+        "Battery Hot",
+        &settings.battery_overheat_temp_up,
+        40,
+        90
+    },
 
-static MenuMode_t menu_mode = MENU_VIEW;
+    {
+        "Battery Cool",
+        &settings.battery_overheat_temp_low,
+        30,
+        80
+    },
+	 {
+		"Fan OFF",
+		&settings.temp_bat_off,
+		30,
+		100
+	},
 
-static Settings_t menu_settings;
+    {
+        "Fan Speed5",
+        &settings.temp_bat_speed5,
+        30,
+        100
+    },
 
-static uint8_t menu_index = 0;
+    {
+        "Fan Speed6",
+        &settings.temp_bat_speed6,
+        30,
+        100
+    },
+	{
+		"Temp diff up",
+		&settings.upped_diff,
+		0,
+		10
+	},
+	{
+		"Temp diff low",
+		&settings.lower_diff,
+		0,
+		10
+	},
 
-static uint8_t save_select = 0;
+    {
+        "Save",
+        NULL,
+        0,
+        0
+    }
+};
 
-static uint8_t menu_active = 0;
-static uint8_t edit_mode = 0;
-
-
-static uint8_t last_draw_index = 255;
-
-typedef struct
-{
-	char name[16];
-
-	uint8_t *value;
-	uint8_t min;
-	uint8_t max;
-} MenuItem_t;
-
-static MenuItem_t menu_items[MENU_ITEMS_COUNT];
 
 void Menu_Init(void)
 {
-    menu_mode = MENU_VIEW;
+	Menu.active = 0;
+	Menu.edit = 0;
+	Menu.item = MENU_ENGINE_HOT;
 
-    menu_settings = settings;
-
-
-    menu_items[0] = (MenuItem_t)
-    {
-        "ENGINE WARN ON",
-        &menu_settings.engine_overheat_temp_up, 50, 150
-    };
-
-
-    menu_items[1] = (MenuItem_t)
-    {
-        "ENGINE WARN OFF", &menu_settings.engine_overheat_temp_low, 40, 140
-    };
-
-
-    menu_items[2] = (MenuItem_t)
-    {
-        "BAT WARN ON",
-        &menu_settings.battery_overheat_temp_up, 20, 80
-    };
-
-
-    menu_items[3] = (MenuItem_t)
-    {
-        "BAT WARN OFF",
-        &menu_settings.battery_overheat_temp_low, 20, 80
-    };
-
-
-    menu_items[4] = (MenuItem_t)
-    {
-        "FAN OFF TEMP",
-        &menu_settings.temp_bat_off, 0, 80
-    };
-
-
-    menu_items[5] = (MenuItem_t)
-    {
-        "FAN SPEED5",
-        &menu_settings.temp_bat_speed5, 0, 40
-    };
-
-
-    menu_items[6] = (MenuItem_t)
-    {
-        "FAN SPEED6",
-        &menu_settings.temp_bat_speed6, 0, 45
-    };
-
-
-    menu_items[7] = (MenuItem_t)
-    {
-        "BALANCE MAX",
-        &menu_settings.upped_diff, 1, 30
-    };
-
-
-    menu_items[8] = (MenuItem_t)
-    {
-        "BALANCE MIN",
-        &menu_settings.lower_diff, 0, 20
-    };
-
+	Menu.save_mode = 0;
+	Menu.save_select = 0;
 }
 
-uint8_t Menu_IsActive(void)
+
+void Menu_Open(void)
 {
-    //return menu_mode != MENU_VIEW;
-	return menu_active;
+	Menu.active = 1;
+	Menu.edit = 0;
+	Menu.item = MENU_ENGINE_HOT;
+
+	Menu.save_mode = 0;
+	Menu.save_select = 0;
+
+
+	memcpy(&settings_backup, &settings, sizeof(Settings_t));
+
+
+	Encoder_Reset();
 }
 
-static void Menu_ShowItem(void)
+void Menu_Close(void)
 {
-    char buf[17];
+	Menu.active = 0;
+	Menu.edit = 0;
 
-
-    LCD_Command(0x01);
-    HAL_Delay(5);
-
-
-    LCD_SetCursor(0,0);
-
-    LCD_String(menu_items[menu_index].name);
-
-
-    LCD_SetCursor(1,0);
-
-
-    if(menu_mode == MENU_EDIT)
-    {
-        sprintf(buf, "<%3d>",
-                *menu_items[menu_index].value);
-    }
-    else
-    {
-        sprintf(buf,
-                " %3d ",
-                *menu_items[menu_index].value);
-    }
-
-
-    LCD_String(buf);
+	Encoder_Reset();
 }
 
-static void Menu_ShowSave(void)
+
+
+static void Menu_Process_Button(void)
 {
-    LCD_Command(0x01);
-    HAL_Delay(5);
+	ButtonEvent_t event = Encoder_GetEvent();
 
+	if(event == BTN_RESET)
+	    {
+	        NVIC_SystemReset();
+	    }
 
-    LCD_SetCursor(0,0);
-    LCD_String("SAVE SETTINGS?");
+	if(event == BTN_NONE)
+		return;
 
+	if(Menu.active == 0)
+	{
+		switch(event)
+		{
+			case BTN_SHORT:
+				break;
 
-    LCD_SetCursor(1,0);
+			case BTN_LONG:
+				Menu_Open();
+				break;
 
+			case BTN_RESET:
+				NVIC_SystemReset();
+				break;
 
-    if(save_select == 0)
-        LCD_String("<YES> NO");
-    else
-        LCD_String("YES <NO>");
+			default:
+				break;
+		}
+		return;
+	}
 
+	if(event == BTN_SHORT)
+	{
+		if(Menu.save_mode)
+		{
+			if(Menu.save_select)
+			{
+				// YES
+				Settings_Save();
+			}
+			else
+			{
+				// NO
+				memcpy(&settings, &settings_backup, sizeof(Settings_t));
+			}
+
+			Menu.save_mode = 0;
+			Menu_Close();
+
+			return;
+		}
+
+		if(Menu.edit == 0)
+		{
+			if(Menu.item == MENU_SAVE)
+			{
+				Menu.save_mode = 1;
+				Menu.save_select = 0;
+
+				Encoder_Reset();
+
+			}
+			else
+			{
+				Menu.edit = 1;
+			}
+		}
+		else
+			Menu.edit = 0;
+	}
 }
 
-static void Menu_Enter(void)
+
+static void Menu_ProcessEncoder(void)
 {
-    menu_settings = settings;
+	if(!Menu.active)
+		return;
 
-    menu_index = 0;
 
-    edit_mode = 0;
+	if(Menu.save_mode)
+	{
+	    int8_t encoder = Encoder_Read();
 
-    menu_active = 1;
+	    if(encoder > 0)
+	    {
+	        Menu.save_select = 0;
+	    }
+	    else if(encoder < 0)
+	    {
+	        Menu.save_select = 1;
+	    }
 
-    Encoder_Reset();
+	    return;
+	}
 
-    LCD_Command(0x01);
-    HAL_Delay(5);
+	int8_t encoder = Encoder_Read();
 
-    Menu_ShowItem();
-}
+	if(encoder == 0)
+		return;
 
-static void Menu_Exit(void)
-{
-    menu_active = 0;
-    edit_mode = 0;
+	if(!Menu.edit)
+	{
+		if(encoder > 0)
+		{
+			Menu.item++;
+			if(Menu.item >= MENU_ITEMS_COUNT)
+				Menu.item = 0;
+		}
+		else
+		{
+			if(Menu.item == 0)
+				Menu.item = MENU_ITEMS_COUNT - 1;
+			else
+				Menu.item--;
+		}
 
-    LCD_Command(0x01);
-    HAL_Delay(5);
-}
 
-static void Menu_Save(void)
-{
-    settings = menu_settings;
 
-    Settings_Save();
+		return;
+	}
 
-    LCD_Command(0x01);
-    HAL_Delay(5);
+	MenuList_t *item = &MenuItems[Menu.item];
 
-    LCD_SetCursor(0,5);
-    LCD_String("SAVED");
+	if(item->value == NULL)
+		return;
 
-    HAL_Delay(1000);
 
-    Menu_Exit();
+	if(encoder > 0)
+	{
+		if(*item->value < item->max)
+			(*item->value)++;
+	}
+	else
+	{
+		if(*item->value > item->min)
+			(*item->value)--;
+	}
+
 }
 
 void Menu_Process(void)
 {
-    int8_t dir;
+	Menu_Process_Button();
 
-
-    /*
-       Если меню закрыто
-    */
-
-    if(!menu_active)
-    {
-        if(Encoder_Button_Held(5000))
-        {
-            Menu_Enter();
-            while(HAL_GPIO_ReadPin(ENC_BTN_GPIO_Port, ENC_BTN_Pin)==GPIO_PIN_RESET);
-            	HAL_Delay(20);
-        }
-
-        return;
-    }
-
-
-
-    /*
-       Если меню открыто
-    */
-
-    dir = Encoder_Read();
-
-    if(menu_index == MENU_SAVE_INDEX)
-    {
-        if(dir != 0)
-        {
-            save_select ^= 1;
-
-            Menu_ShowSave();
-        }
-
-
-        if(Encoder_Button_Pressed())
-        {
-            if(save_select == 0)
-            {
-                Menu_Save();
-            }
-            else
-            {
-                Menu_Exit();
-                while(HAL_GPIO_ReadPin(ENC_BTN_GPIO_Port, ENC_BTN_Pin)==GPIO_PIN_RESET);
-                HAL_Delay(20);
-            }
-        }
-
-
-        return;
-    }
-
-
-
-    /*
-       РЕДАКТИРОВАНИЕ ЗНАЧЕНИЯ
-    */
-
-    if(edit_mode)
-    {
-
-        if(dir > 0)
-        {
-            if(*menu_items[menu_index].value <
-               menu_items[menu_index].max)
-            {
-                (*menu_items[menu_index].value)++;
-            }
-
-            Menu_ShowItem();
-        }
-
-
-        if(dir < 0)
-        {
-            if(*menu_items[menu_index].value >
-               menu_items[menu_index].min)
-            {
-                (*menu_items[menu_index].value)--;
-            }
-
-            Menu_ShowItem();
-        }
-
-
-
-        if(Encoder_Button_Pressed())
-        {
-            edit_mode = 0;
-
-            Menu_ShowItem();
-        }
-
-
-        return;
-    }
-
-
-
-    /*
-       ПРОСМОТР ПАРАМЕТРОВ
-    */
-
-
-    if(dir > 0)
-    {
-        menu_index++;
-
-        if(menu_index >= MENU_TOTAL_ITEMS)
-        {
-            menu_index = 0;
-        }
-
-        Menu_Show();
-    }
-
-
-    if(dir < 0)
-    {
-        if(menu_index == 0)
-            menu_index = MENU_TOTAL_ITEMS - 1;
-        else
-            menu_index--;
-
-        Menu_Show();
-    }
-
-
-
-    /*
-       Вход в редактирование
-    */
-
-    if(Encoder_Button_Pressed())
-    {
-
-        if(menu_index == MENU_SAVE_INDEX)
-        {
-            if(save_select == 0)
-            {
-                Menu_Save();
-            }
-            else
-            {
-                Menu_Exit();
-            }
-
-            return;
-        }
-
-
-        edit_mode = 1;
-
-        Menu_ShowItem();
-    }
-
-
+	Menu_ProcessEncoder();
 }
 
-void Menu_Show(void)
+uint8_t Menu_IsEdit(void)
 {
-    if(menu_index == MENU_SAVE_INDEX)
-    {
-        Menu_ShowSave();
-    }
-    else
-    {
-        Menu_ShowItem();
-    }
+    return Menu.edit;
 }
 
+const char *Menu_GetName(void)
+{
+    return MenuItems[Menu.item].name;
+}
+
+uint8_t Menu_GetValue(void)
+{
+    if(MenuItems[Menu.item].value == NULL)
+        return 0;
+
+    return *MenuItems[Menu.item].value;
+}
+
+
+uint8_t Menu_IsActive(void)
+{
+    return Menu.active;
+}
+
+
+uint8_t Menu_IsSave(void)
+{
+    return (Menu.item == MENU_SAVE);
+}
+
+
+uint8_t Menu_GetItem(void)
+{
+    return Menu.item;
+}
+
+uint8_t Menu_IsSaveMode(void)
+{
+    return Menu.save_mode;
+}
+
+
+uint8_t Menu_GetSaveSelect(void)
+{
+    return Menu.save_select;
+}

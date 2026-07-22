@@ -9,6 +9,7 @@
 
 static TIM_HandleTypeDef *htim_encoder = NULL;
 static uint16_t last_encoder_value = 0;
+static int16_t encoder_accumulator = 0;
 
 
 
@@ -40,15 +41,34 @@ void Encoder_Init(void)
 
 int8_t Encoder_Read(void)
 {
-    if(htim_encoder == NULL) return 0;
+    if(htim_encoder == NULL)
+        return 0;
+
 
     uint16_t now = __HAL_TIM_GET_COUNTER(htim_encoder);
+
     int16_t delta = (int16_t)(now - last_encoder_value);
+
     last_encoder_value = now;
 
 
-    if(delta >= 2) return 1;
-    if(delta <= -2) return -1;
+    encoder_accumulator += delta;
+
+
+    if(encoder_accumulator >= 4)
+    {
+        encoder_accumulator = 0;
+        return 1;
+    }
+
+
+    if(encoder_accumulator <= -4)
+    {
+        encoder_accumulator = 0;
+        return -1;
+    }
+
+
     return 0;
 }
 

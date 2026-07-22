@@ -9,6 +9,7 @@ void LCD_Data(uint8_t data);
 void LCD_String(char *str);
 void LCD_SetCursor(uint8_t row, uint8_t col);
 void LCD_Update(void);
+void LCD_MenuUpdate(void);
 
 void DWT_Delay_Init(void);
 void DWT_Delay_us(uint32_t us);

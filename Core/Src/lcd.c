@@ -3,6 +3,7 @@
 #include "fan.h"
 #include "warnings.h"
 #include "main.h"
+#include "menu.h"
 #include <stdio.h>
 
 #define LCD_PORT GPIOA
@@ -20,7 +21,7 @@ extern uint8_t warning_count;
 
 
 uint32_t last_lcd_update = 0;
-const uint32_t lcd_update_period = 500;
+const uint32_t lcd_update_period = 100;
 static char lcd_buffer[32]; // bufer
 
 
@@ -149,6 +150,12 @@ void LCD_Update(void)
 
     last_lcd_update = current_time;
 
+    if(Menu_IsActive())
+	{
+		LCD_MenuUpdate();
+		return;
+	}
+
 
     if(warning_count > 0)
     {
@@ -168,4 +175,112 @@ void LCD_Update(void)
     	sprintf(lcd_buffer, "Fan:%d   Bmax:%2d", fan_speed, temp_bat_max);
     LCD_SetCursor(1,0);
     LCD_String(lcd_buffer);
+}
+
+void LCD_MenuUpdate(void)
+{
+    static uint8_t last_item = 255;
+    static uint8_t last_value = 255;
+    static uint8_t last_edit = 255;
+
+    static uint8_t last_save_select = 255;
+    static uint8_t last_save_mode = 255;
+
+
+    uint8_t value = Menu_GetValue();
+    uint8_t edit = Menu_IsEdit();
+
+    if(Menu_IsSaveMode())
+    {
+        uint8_t select = Menu_GetSaveSelect();
+
+        if(last_save_mode == 1 && last_save_select == select)
+            return;
+
+
+        last_save_mode = 1;
+        last_save_select = select;
+
+
+        LCD_SetCursor(0,0);
+        LCD_String("                ");
+
+        LCD_SetCursor(1,0);
+        LCD_String("                ");
+
+
+        LCD_SetCursor(0,0);
+        LCD_String("Save settings?");
+
+
+        LCD_SetCursor(1,0);
+
+        if(select)
+        {
+            LCD_String("<YES>   NO");
+        }
+        else
+        {
+            LCD_String(" YES   <NO>");
+        }
+
+        return;
+    }
+
+
+
+
+    last_save_mode = 0;
+
+
+    if(last_item != Menu_GetItem())
+    {
+        last_item = Menu_GetItem();
+
+
+        LCD_SetCursor(0,0);
+        LCD_String("                ");
+
+
+        LCD_SetCursor(0,0);
+        LCD_String(Menu_GetName());
+
+
+        last_value = 255;
+        last_edit = 255;
+    }
+
+
+
+    if(last_value != value || last_edit != edit)
+    {
+        last_value = value;
+        last_edit = edit;
+
+
+        LCD_SetCursor(1,0);
+        LCD_String("                ");
+
+
+        LCD_SetCursor(1,0);
+
+
+        if(Menu_IsSave())
+	   {
+		   LCD_String("Press button");
+	   }
+	   else
+	   {
+		   if(edit)
+		   {
+			   sprintf(lcd_buffer, "< %d >", value);
+		   }
+		   else
+		   {
+			   sprintf(lcd_buffer, "  %d", value);
+		   }
+
+		   LCD_String(lcd_buffer);
+	   }
+    }
 }

@@ -78,7 +78,8 @@ int main(void)
 
 
 	LCD_Command(0x01);
-	HAL_Delay(10);
+	HAL_Delay(5);
+
 
 
     while (1)
@@ -90,16 +91,13 @@ int main(void)
 		CAN_CheckStatus();
 		Warnings_Check();
 
-		//Menu_Process();
-
-		if(!Menu_IsActive())
-		{
-		    LCD_Update();
-		}
-
     	Encoder_Button_Update();
 
-    	ButtonEvent_t event = Encoder_GetEvent();
+    	Menu_Process();
+
+    	LCD_Update();
+
+    	HAL_Delay(10);
 
 
     }
