@@ -18,6 +18,7 @@
 
 
 extern uint8_t warning_count;
+extern uint8_t manual_fan_6;
 
 
 uint32_t last_lcd_update = 0;
@@ -164,15 +165,17 @@ void LCD_Update(void)
     }
 
 
-    sprintf(lcd_buffer, "t:%3d%cC Bmin:%d", temp_engine, 0xDF, temp_bat_min);
+    sprintf(lcd_buffer, "t:%3d%cC Bmin:%d ", temp_engine, 0xDF, temp_bat_min);
 
     LCD_SetCursor(0,0);
     LCD_String(lcd_buffer);
 
-    if(balance_mode == 1)
-    	sprintf(lcd_buffer, "Fan_B:%d Bmax:%2d", fan_speed, temp_bat_max);
+    if(manual_fan_6 == 1)
+    	sprintf(lcd_buffer, "Fan_F:%d Bmax:%2d ", fan_speed, temp_bat_max);
+    else if(balance_mode == 1)
+    	sprintf(lcd_buffer, "Fan_B:%d Bmax:%2d ", fan_speed, temp_bat_max);
     else
-    	sprintf(lcd_buffer, "Fan:%d   Bmax:%2d", fan_speed, temp_bat_max);
+    	sprintf(lcd_buffer, "Fan:%d   Bmax:%2d ", fan_speed, temp_bat_max);
     LCD_SetCursor(1,0);
     LCD_String(lcd_buffer);
 }
@@ -185,6 +188,9 @@ void LCD_MenuUpdate(void)
 
     static uint8_t last_save_select = 255;
     static uint8_t last_save_mode = 255;
+
+    static uint8_t last_defaults_select = 255;
+    static uint8_t last_defaults_mode = 255;
 
 
     uint8_t value = Menu_GetValue();
@@ -227,10 +233,46 @@ void LCD_MenuUpdate(void)
         return;
     }
 
-
-
-
     last_save_mode = 0;
+
+    if(Menu_IsDefaultsMode())
+        {
+            uint8_t select = Menu_GetDefaultsSelect();
+
+            if(last_defaults_mode == 1 && last_defaults_select == select)
+                return;
+
+
+            last_defaults_mode = 1;
+            last_defaults_select = select;
+
+
+            LCD_SetCursor(0,0);
+            LCD_String("                ");
+
+            LCD_SetCursor(1,0);
+            LCD_String("                ");
+
+
+            LCD_SetCursor(0,0);
+            LCD_String("Defaults settings?");
+
+
+            LCD_SetCursor(1,0);
+
+            if(select)
+            {
+                LCD_String("<YES>   NO");
+            }
+            else
+            {
+                LCD_String(" YES   <NO>");
+            }
+
+            return;
+        }
+
+        last_defaults_mode = 0;
 
 
     if(last_item != Menu_GetItem())
@@ -265,10 +307,8 @@ void LCD_MenuUpdate(void)
         LCD_SetCursor(1,0);
 
 
-        if(Menu_IsSave())
-	   {
+       if(Menu_IsSave() || Menu_IsDefaults())
 		   LCD_String("Press button");
-	   }
 	   else
 	   {
 		   if(edit)

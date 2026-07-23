@@ -32,7 +32,7 @@ void Update_Led(void);
 
 
 /* ================= SWO PRINTF ================= */
-//#if DEBUG_MODE
+
 int _write(int file, char *ptr, int len)
 {
     (void)file;
@@ -42,7 +42,7 @@ int _write(int file, char *ptr, int len)
     }
     return len;
 }
-//#endif
+
 
 
 
@@ -62,9 +62,7 @@ int main(void)
     Encoder_Init();
     Menu_Init();
 
-
 	CAN_FilterConfig();
-
 
 	CAN_StartAndCheck();
 
@@ -76,11 +74,8 @@ int main(void)
 	/* ENABLE RX INTERRUPT */
 	HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
 
-
 	LCD_Command(0x01);
 	HAL_Delay(5);
-
-
 
     while (1)
     {
@@ -98,8 +93,6 @@ int main(void)
     	LCD_Update();
 
     	HAL_Delay(10);
-
-
     }
 }
 
@@ -117,11 +110,7 @@ void SystemClock_Config(void)
 
     HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
-    RCC_ClkInitStruct.ClockType =
-        RCC_CLOCKTYPE_SYSCLK |
-        RCC_CLOCKTYPE_HCLK |
-        RCC_CLOCKTYPE_PCLK1 |
-        RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
     RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
@@ -208,7 +197,6 @@ static void MX_TIM3_Init(void)
 }
 
 
-
 /* ================= GPIO ================= */
 static void MX_GPIO_Init(void)
 {
@@ -218,13 +206,7 @@ static void MX_GPIO_Init(void)
 
     GPIO_InitTypeDef gpio = {0};
 
-    gpio.Pin =
-        GPIO_PIN_0 |
-        GPIO_PIN_1 |
-        GPIO_PIN_2 |
-        GPIO_PIN_3 |
-        GPIO_PIN_4 |
-        GPIO_PIN_5;
+    gpio.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5;
 
     gpio.Mode = GPIO_MODE_OUTPUT_PP;
     gpio.Speed = GPIO_SPEED_FREQ_LOW;

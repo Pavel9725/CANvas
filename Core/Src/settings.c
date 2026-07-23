@@ -1,5 +1,7 @@
 #include "settings.h"
+#include "main.h"
 #include <string.h>
+
 
 
 #define SETTINGS_SIGNATURE    0x12345678      // "SET1"
@@ -7,14 +9,16 @@
 
 
 
-
 Settings_t settings;
+
 static uint16_t Settings_CalculateCRC(void);
+
 
 void Settings_LoadDefaults(void)
 {
 	settings.signature = SETTINGS_SIGNATURE;
 	settings.version = SETTINGS_VERSION;
+
 
 /* ===================== CRITICAL THRESHOLDS ========================= */
 
@@ -29,7 +33,6 @@ void Settings_LoadDefaults(void)
 
 	settings.upped_diff = 8;
 	settings.lower_diff = 3;
-
 
 
 /* ===================== BATTERY TEMPERATURE THRESHOLDS FOR THE FAN ========================= */
@@ -63,7 +66,9 @@ void Settings_Save(void)
 
 	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPERR);
 
+
 	FLASH_EraseInitTypeDef erase;
+
 
 	uint32_t page_error = 0;
 
@@ -99,8 +104,7 @@ exit:
 	HAL_FLASH_Lock();
 
 	if(status != HAL_OK)
-		printf("Settings save error\r\n");
-
+		DEBUG_PRINT("Settings save error\r\n");
 }
 
 void Settings_Reset(void)

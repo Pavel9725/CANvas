@@ -1,10 +1,3 @@
-/*
- * can.h
- *
- *  Created on: Jul 17, 2026
- *      Author: Pavel
- */
-
 #ifndef INC_CAN_H_
 #define INC_CAN_H_
 
@@ -28,4 +21,4 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
 void CAN_StartAndCheck(void);
 
 
-#endif /* INC_CAN_H_ */
+#endif

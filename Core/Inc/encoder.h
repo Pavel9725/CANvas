@@ -43,20 +43,18 @@ typedef struct
 extern Encoder_t Encoder;
 
 
-
 void Encoder_Init(void);
 void Encoder_Button_Update(void);
-uint8_t Encoder_Button_Debounce(void);
-ButtonEvent_t Encoder_GetEvent(void);
-
-
-
+void Encoder_Reset(void);
+void Encoder_Update(void);
 
 int8_t Encoder_Read(void);
-void Encoder_Reset(void);
-int16_t Encoder_GetValue(void);
+uint8_t Encoder_Button_Debounce(void);
 uint8_t Encoder_Button_Pressed(void);
 uint8_t Encoder_Button_Held(uint32_t hold_time_ms);
-void Encoder_Update(void);
+
+int16_t Encoder_GetValue(void);
+
+ButtonEvent_t Encoder_GetEvent(void);
 
 #endif

@@ -1,9 +1,3 @@
-/*
- * fan.h
- *
- *  Created on: Jul 17, 2026
- *      Author: Pavel
- */
 
 #ifndef INC_FAN_H_
 #define INC_FAN_H_
@@ -24,4 +18,4 @@ void Fan_UpdateBalanceMode(void);
 uint8_t Fan_GetTargetSpeed(void);
 
 
-#endif /* INC_FAN_H_ */
+#endif

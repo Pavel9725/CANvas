@@ -21,6 +21,7 @@ typedef enum
 	MENU_TEMP_DIFF_LOW,
 
     MENU_SAVE,
+	MENU_DEFAULTS,
 
     MENU_ITEMS_COUNT
 
@@ -33,10 +34,10 @@ typedef struct
 {
     const char *name;
 
-    int16_t *value;
+    int8_t *value;
 
-    int16_t min;
-    int16_t max;
+    int8_t min;
+    int8_t max;
 
 } MenuList_t;
 
@@ -49,6 +50,9 @@ typedef struct
 
     uint8_t save_select;
     uint8_t save_mode;
+
+    uint8_t defaults_select;
+	uint8_t defaults_mode;
 
 }Menu_t;
 

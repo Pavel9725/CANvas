@@ -9,6 +9,9 @@ Menu_t Menu;
 static Settings_t settings_backup;
 
 
+extern uint8_t manual_fan_6;
+
+
 static MenuList_t MenuItems[MENU_ITEMS_COUNT] =
 {
     {
@@ -38,45 +41,54 @@ static MenuList_t MenuItems[MENU_ITEMS_COUNT] =
         30,
         80
     },
+
 	 {
 		"Fan OFF",
 		&settings.temp_bat_off,
 		30,
-		100
+		40
 	},
 
     {
         "Fan Speed5",
         &settings.temp_bat_speed5,
         30,
-        100
+        40
     },
 
     {
         "Fan Speed6",
         &settings.temp_bat_speed6,
         30,
-        100
+        40
     },
+
 	{
-		"Temp diff up",
+		"Balance diff on",
 		&settings.upped_diff,
 		0,
 		10
 	},
 	{
-		"Temp diff low",
+		"Balance diff off",
 		&settings.lower_diff,
 		0,
 		10
 	},
 
-    {
-        "Save",
+	{
+        "Save settings",
         NULL,
         0,
         0
-    }
+    },
+
+    {
+		"Defaults settings",
+		NULL,
+		0,
+		0
+	},
 };
 
 
@@ -88,6 +100,9 @@ void Menu_Init(void)
 
 	Menu.save_mode = 0;
 	Menu.save_select = 0;
+
+	Menu.defaults_mode = 0;
+	Menu.defaults_select = 0;
 }
 
 
@@ -99,6 +114,9 @@ void Menu_Open(void)
 
 	Menu.save_mode = 0;
 	Menu.save_select = 0;
+
+	Menu.defaults_mode = 0;
+	Menu.defaults_select = 0;
 
 
 	memcpy(&settings_backup, &settings, sizeof(Settings_t));
@@ -116,15 +134,12 @@ void Menu_Close(void)
 }
 
 
-
 static void Menu_Process_Button(void)
 {
 	ButtonEvent_t event = Encoder_GetEvent();
 
 	if(event == BTN_RESET)
-	    {
-	        NVIC_SystemReset();
-	    }
+		NVIC_SystemReset();
 
 	if(event == BTN_NONE)
 		return;
@@ -134,14 +149,11 @@ static void Menu_Process_Button(void)
 		switch(event)
 		{
 			case BTN_SHORT:
+				manual_fan_6 ^= 1;
 				break;
 
 			case BTN_LONG:
 				Menu_Open();
-				break;
-
-			case BTN_RESET:
-				NVIC_SystemReset();
 				break;
 
 			default:
@@ -155,15 +167,9 @@ static void Menu_Process_Button(void)
 		if(Menu.save_mode)
 		{
 			if(Menu.save_select)
-			{
-				// YES
 				Settings_Save();
-			}
 			else
-			{
-				// NO
 				memcpy(&settings, &settings_backup, sizeof(Settings_t));
-			}
 
 			Menu.save_mode = 0;
 			Menu_Close();
@@ -171,20 +177,38 @@ static void Menu_Process_Button(void)
 			return;
 		}
 
+/////////////////////// MENU ACTIVE
+		if(Menu.defaults_mode)
+		{
+			if(Menu.defaults_select)
+				Settings_LoadDefaults();
+			else
+				memcpy(&settings, &settings_backup, sizeof(Settings_t));
+
+			Menu.defaults_mode = 0;
+			Menu_Close();
+
+			return;
+		}
+
 		if(Menu.edit == 0)
 		{
-			if(Menu.item == MENU_SAVE)
-			{
-				Menu.save_mode = 1;
-				Menu.save_select = 0;
-
-				Encoder_Reset();
-
-			}
-			else
-			{
-				Menu.edit = 1;
-			}
+		    if(Menu.item == MENU_SAVE)
+		    {
+		        Menu.save_mode = 1;
+		        Menu.save_select = 0;
+		        Encoder_Reset();
+		    }
+		    else if(Menu.item == MENU_DEFAULTS)
+		    {
+		        Menu.defaults_mode = 1;
+		        Menu.defaults_select = 0;
+		        Encoder_Reset();
+		    }
+		    else
+		    {
+		        Menu.edit = 1;
+		    }
 		}
 		else
 			Menu.edit = 0;
@@ -197,27 +221,30 @@ static void Menu_ProcessEncoder(void)
 	if(!Menu.active)
 		return;
 
+	int8_t encoder = Encoder_Read();
+
+	if(encoder == 0)
+			return;
 
 	if(Menu.save_mode)
 	{
-	    int8_t encoder = Encoder_Read();
-
 	    if(encoder > 0)
-	    {
 	        Menu.save_select = 0;
-	    }
 	    else if(encoder < 0)
-	    {
 	        Menu.save_select = 1;
-	    }
 
 	    return;
 	}
 
-	int8_t encoder = Encoder_Read();
+	if(Menu.defaults_mode)
+	{
+		if(encoder > 0)
+			Menu.defaults_select = 0;
+		else if(encoder < 0)
+			Menu.defaults_select = 1;
 
-	if(encoder == 0)
 		return;
+	}
 
 	if(!Menu.edit)
 	{
@@ -235,8 +262,6 @@ static void Menu_ProcessEncoder(void)
 				Menu.item--;
 		}
 
-
-
 		return;
 	}
 
@@ -244,7 +269,6 @@ static void Menu_ProcessEncoder(void)
 
 	if(item->value == NULL)
 		return;
-
 
 	if(encoder > 0)
 	{
@@ -296,6 +320,10 @@ uint8_t Menu_IsSave(void)
     return (Menu.item == MENU_SAVE);
 }
 
+uint8_t Menu_IsDefaults(void)
+{
+    return (Menu.item == MENU_DEFAULTS);
+}
 
 uint8_t Menu_GetItem(void)
 {
@@ -307,8 +335,17 @@ uint8_t Menu_IsSaveMode(void)
     return Menu.save_mode;
 }
 
+uint8_t Menu_IsDefaultsMode(void)
+{
+    return Menu.defaults_mode;
+}
 
 uint8_t Menu_GetSaveSelect(void)
 {
     return Menu.save_select;
+}
+
+uint8_t Menu_GetDefaultsSelect(void)
+{
+    return Menu.defaults_select;
 }

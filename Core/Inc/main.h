@@ -19,7 +19,6 @@ extern "C" {
 void Error_Handler(void);
 
 
-
 #ifdef __cplusplus
 }
 #endif

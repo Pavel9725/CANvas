@@ -1,15 +1,7 @@
-/*
- * can.c
- *
- *  Created on: Jul 17, 2026
- *      Author: Pavel
- */
 #include "can.h"
 #include "main.h"
 #include "lcd.h"
 #include <stdio.h>
-
-
 
 
 /* ========================================================================== */
@@ -147,17 +139,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         return;
     }
 
-	#if DEBUG_MODE
-    	DEBUG_PRINT("ID:%03lX DLC:%lu DATA:", rxHeader.StdId, rxHeader.DLC);
-
-		for (int i = 0; i < rxHeader.DLC; i++)
-		{
-			DEBUG_PRINT(" %02X", rxData[i]);
-		}
-
-		DEBUG_PRINT("\r\n");
-		DEBUG_PRINT("\r\n");
-	#endif
+	for (int i = 0; i < rxHeader.DLC; i++)
+	{
+		DEBUG_PRINT(" %02X", rxData[i]);
+	}
 
 
 ////////////////////////// processing for ID 0x3CB, 0x7E8 /////////////////////////////
@@ -199,9 +184,9 @@ void CAN_StartAndCheck(void)
     {
         LCD_Command(0x01);
         LCD_SetCursor(0, 3);
-        LCD_String("CAN START ERR");
+        LCD_String("CAN START ERROR");
 
-        DEBUG_PRINT("CAN STATE ERR\r\n");
+        DEBUG_PRINT("CAN STATE ERROR\r\n");
         while(1);
     }
 
@@ -221,9 +206,9 @@ void CAN_StartAndCheck(void)
     {
         LCD_Command(0x01);
         LCD_SetCursor(0, 3);
-        LCD_String("CAN STATE ERR");
+        LCD_String("CAN STATE ERROR");
 
-        DEBUG_PRINT("CAN STATE ERR\r\n");
+        DEBUG_PRINT("CAN STATE ERROR\r\n");
         while(1);
     }
 }

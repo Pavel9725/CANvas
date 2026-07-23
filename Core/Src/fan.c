@@ -1,9 +1,3 @@
-/*
- * fan.c
- *
- *  Created on: Jul 17, 2026
- *      Author: Pavel
- */
 #include "fan.h"
 #include "settings.h"
 #include "can.h"
@@ -17,10 +11,11 @@
 
 uint8_t fan_speed = 0;							//current speed fan
 uint8_t balance_mode = 0;   					// 0 - normal mode, 1 - balance mode
+uint8_t manual_fan_6 = 0;						// 0 - auto, 1 - FORCE 6
 
 static uint8_t fan_mode = 0; 							//current state fun 0 - one transmit, 1 - period transmit
-static uint32_t last_fan_time = 0;						//timer sent command fan
-static const uint32_t timeTransiveFanSpeed = 500;		//ms
+static uint32_t last_fan_time = 0;
+static const uint32_t timeTransiveFanSpeed = 500;		//timer sent command fan ms
 
 
 void Fan_UpdateBalanceMode(void)
@@ -39,6 +34,8 @@ uint8_t Fan_GetTargetSpeed(void)
 {
 	extern uint8_t temp_bat_max;
 
+	if(manual_fan_6)
+		return FAN_6;
 
 	if(balance_mode)
 		return FAN_6;
@@ -60,10 +57,20 @@ static void Fan_SendCommand(uint8_t speed)
 {
 	uint8_t data_fan[8] = { 0x04, 0x30, 0x81, 0x00, speed, 0x00, 0x00, 0x00 };
 
-	CAN_SendRequest(0x7E3, 8, data_fan);
+	if(manual_fan_6)
+	{
+		CAN_SendRequest(0x7E3, 8, data_fan);
+		fan_speed = speed;
+		fan_mode = (speed == FAN_OFF) ? 0 : 1;
+		return;
+	}
 
-	fan_speed = speed;
-	fan_mode = (speed == FAN_OFF) ? 0 : 1;
+	if (HAL_GetTick() - last_fan_time >= timeTransiveFanSpeed)
+	{
+		last_fan_time = HAL_GetTick();
+		CAN_SendRequest(0x7E3, 8, data_fan);
+		fan_speed = speed;
+		fan_mode = (speed == FAN_OFF) ? 0 : 1;
 
 	#if DEBUG_MODE
 	if(balance_mode)
@@ -71,23 +78,33 @@ static void Fan_SendCommand(uint8_t speed)
 	else
 		DEBUG_PRINT("FAN SPEED CHANDEG TO: %d\r\n", speed);
 	#endif
+	}
 }
 
 void Fan_Control(void)
 {
 	uint8_t target_speed = Fan_GetTargetSpeed();
+	uint32_t current_time = HAL_GetTick();
+
+
+	 if(manual_fan_6)
+	{
+		if(current_time - last_fan_time >= timeTransiveFanSpeed)
+		{
+			last_fan_time = current_time;
+			Fan_SendCommand(FAN_6);
+			printf("FAN_FORCE_6!\n\n");
+		}
+		return;
+	}
 
 	if(target_speed == FAN_OFF && fan_mode != 0)
 	{
 		Fan_SendCommand(FAN_OFF);
+		printf("FAN_OFF!\n\n");
 		return;
 	}
 
-	if (HAL_GetTick() - last_fan_time >= timeTransiveFanSpeed)
-	{
-		last_fan_time = HAL_GetTick();
-		Fan_SendCommand(target_speed);
-	}
-
+	Fan_SendCommand(target_speed);
 }
 

@@ -1,5 +1,3 @@
-
-
 #ifndef INC_SETTINGS_H_
 #define INC_SETTINGS_H_
 
@@ -19,17 +17,17 @@ typedef struct
 
 /* ===================== CRITICAL THRESHOLDS ========================= */
 
-	uint16_t engine_overheat_temp_up;
-    uint16_t engine_overheat_temp_low;
+	uint8_t engine_overheat_temp_up;
+    uint8_t engine_overheat_temp_low;
 
-    uint16_t battery_overheat_temp_up;
-    uint16_t battery_overheat_temp_low;
+    uint8_t battery_overheat_temp_up;
+    uint8_t battery_overheat_temp_low;
 
 /* ===================== BATTERY TEMPERATURE THRESHOLDS FOR THE FAN ========================= */
 
-    uint16_t temp_bat_off;
-    uint16_t temp_bat_speed5;
-    uint16_t temp_bat_speed6;
+    uint8_t temp_bat_off;
+    uint8_t temp_bat_speed5;
+    uint8_t temp_bat_speed6;
 
 /* ===================== DELTAS FOR BALANCING ========================= */
 
@@ -43,7 +41,7 @@ typedef struct
 
 #pragma pack(pop)
 
-_Static_assert(sizeof(Settings_t) == 24, "Settings_t size changed!");
+_Static_assert(sizeof(Settings_t) == 17, "Settings_t size changed!");
 
 extern Settings_t settings;
 
