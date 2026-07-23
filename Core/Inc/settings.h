@@ -44,6 +44,7 @@ typedef struct
 _Static_assert(sizeof(Settings_t) == 17, "Settings_t size changed!");
 
 extern Settings_t settings;
+extern Settings_t menu_settings;
 
 void Settings_LoadDefaults(void);
 void Settings_Load(void);

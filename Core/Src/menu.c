@@ -16,62 +16,62 @@ static MenuList_t MenuItems[MENU_ITEMS_COUNT] =
 {
     {
         "Engine Hot",
-        &settings.engine_overheat_temp_up,
+        &menu_settings.engine_overheat_temp_up,
         80,
         120
     },
 
     {
         "Engine Cool",
-        &settings.engine_overheat_temp_low,
+        &menu_settings.engine_overheat_temp_low,
         70,
         110
     },
 
     {
         "Battery Hot",
-        &settings.battery_overheat_temp_up,
+        &menu_settings.battery_overheat_temp_up,
         40,
         90
     },
 
     {
         "Battery Cool",
-        &settings.battery_overheat_temp_low,
+        &menu_settings.battery_overheat_temp_low,
         30,
         80
     },
 
 	 {
 		"Fan OFF",
-		&settings.temp_bat_off,
+		&menu_settings.temp_bat_off,
 		30,
 		40
 	},
 
     {
         "Fan Speed5",
-        &settings.temp_bat_speed5,
+        &menu_settings.temp_bat_speed5,
         30,
         40
     },
 
     {
         "Fan Speed6",
-        &settings.temp_bat_speed6,
+        &menu_settings.temp_bat_speed6,
         30,
         40
     },
 
 	{
 		"Balance diff on",
-		&settings.upped_diff,
+		&menu_settings.upped_diff,
 		0,
 		10
 	},
 	{
 		"Balance diff off",
-		&settings.lower_diff,
+		&menu_settings.lower_diff,
 		0,
 		10
 	},
@@ -111,6 +111,7 @@ void Menu_Open(void)
 	Menu.active = 1;
 	Menu.edit = 0;
 	Menu.item = MENU_ENGINE_HOT;
+	menu_settings = settings;
 
 	Menu.save_mode = 0;
 	Menu.save_select = 0;
@@ -167,7 +168,10 @@ static void Menu_Process_Button(void)
 		if(Menu.save_mode)
 		{
 			if(Menu.save_select)
+			{
+				settings = menu_settings;
 				Settings_Save();
+			}
 			else
 				memcpy(&settings, &settings_backup, sizeof(Settings_t));
 

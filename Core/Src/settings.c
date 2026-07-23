@@ -10,6 +10,7 @@
 
 
 Settings_t settings;
+Settings_t menu_settings;
 
 static uint16_t Settings_CalculateCRC(void);
 

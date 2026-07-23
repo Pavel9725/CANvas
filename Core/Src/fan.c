@@ -57,20 +57,11 @@ static void Fan_SendCommand(uint8_t speed)
 {
 	uint8_t data_fan[8] = { 0x04, 0x30, 0x81, 0x00, speed, 0x00, 0x00, 0x00 };
 
-	if(manual_fan_6)
-	{
-		CAN_SendRequest(0x7E3, 8, data_fan);
-		fan_speed = speed;
-		fan_mode = (speed == FAN_OFF) ? 0 : 1;
-		return;
-	}
+	CAN_SendRequest(0x7E3, 8, data_fan);
+	printf("FAN: %d\r\n", speed);
 
-	if (HAL_GetTick() - last_fan_time >= timeTransiveFanSpeed)
-	{
-		last_fan_time = HAL_GetTick();
-		CAN_SendRequest(0x7E3, 8, data_fan);
-		fan_speed = speed;
-		fan_mode = (speed == FAN_OFF) ? 0 : 1;
+	fan_speed = speed;
+	fan_mode = (speed == FAN_OFF) ? 0 : 1;
 
 	#if DEBUG_MODE
 	if(balance_mode)
@@ -78,32 +69,24 @@ static void Fan_SendCommand(uint8_t speed)
 	else
 		DEBUG_PRINT("FAN SPEED CHANDEG TO: %d\r\n", speed);
 	#endif
-	}
 }
 
 void Fan_Control(void)
 {
 	uint8_t target_speed = Fan_GetTargetSpeed();
-	uint32_t current_time = HAL_GetTick();
+	uint32_t now = HAL_GetTick();
 
+	if(now - last_fan_time < timeTransiveFanSpeed)
+		return;
 
-	 if(manual_fan_6)
-	{
-		if(current_time - last_fan_time >= timeTransiveFanSpeed)
+	last_fan_time = now;
+
+	if(target_speed == FAN_OFF)
+		if(fan_mode)
 		{
-			last_fan_time = current_time;
-			Fan_SendCommand(FAN_6);
-			printf("FAN_FORCE_6!\n\n");
+			Fan_SendCommand(FAN_OFF);
+			printf("FAN_OFF!\n\n");
 		}
-		return;
-	}
-
-	if(target_speed == FAN_OFF && fan_mode != 0)
-	{
-		Fan_SendCommand(FAN_OFF);
-		printf("FAN_OFF!\n\n");
-		return;
-	}
 
 	Fan_SendCommand(target_speed);
 }
